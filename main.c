@@ -6,6 +6,8 @@
 int
 main(int argc, char *argv[])
 {
+    ulog(UINFO, "wtf");
+
     u8 prog[MEMSIZE] = {
         [0] = 0xA2, // LDX
         [1] = 0x00, // #$00
@@ -27,8 +29,7 @@ main(int argc, char *argv[])
     };
 
     emu_t e;
-    emu_init(&e, prog, 0);
-    emu_log_state(&e);
+    emu_init(&e, prog, MEMSIZE);
 
     while (1) {
         emu_step(&e);

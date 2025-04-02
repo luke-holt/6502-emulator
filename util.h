@@ -14,7 +14,7 @@ typedef enum {
 #include <stdlib.h>
 #define UASSERT(c) \
     do { \
-        if (!c) { \
+        if (!(c)) { \
             ulog(UFATL, "%s:%d %s assertion failed '%s'", \
                      __FILE__, __LINE__, __func__, #c); \
             abort(); \
@@ -56,6 +56,8 @@ ulog(UtilLogLvl lvl, const char *fmt, ...)
     va_start(v, fmt);
     vfprintf(stdout, fmt, v);
     va_end(v);
+
+    fputc('\n', stdout);
 }
 
 void *

@@ -665,10 +665,10 @@ const isn_t isns[256] = {
 /*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F,       */
 };
 
-void emu_init(emu_t *e, const u8 *prog, u16 size) {
+void emu_init(emu_t *e, const u8 *prog, int size) {
     UASSERT(e);
     UASSERT(prog);
-    UASSERT(size);
+    UASSERT(size == MEMSIZE);
     memset(e, 0, sizeof(*e));
     e->mem = umalloc(MEMSIZE);
     memcpy(e->mem, prog, size);

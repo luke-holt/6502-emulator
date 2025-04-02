@@ -31,7 +31,7 @@ typedef struct {
     cpu_t cpu;
 } emu_t;
 
-void emu_init(emu_t *e, const u8 *prog, u16 size);
+void emu_init(emu_t *e, const u8 *prog, int size);
 void emu_end(emu_t *e);
 void emu_step(emu_t *e);
 void emu_log_state(emu_t *e);
