@@ -37,9 +37,7 @@
 #define NMASK(b) ((b) & N)
 #define VMASK(b) ((b) & V)
 
-
 #define CLRMASK(byte, mask) ((byte) & ~(mask)) // clear mask bits in byte
-
 
 typedef unsigned char u8;
 typedef char i8;
@@ -65,8 +63,7 @@ typedef struct {
 static inline u16 addr(u8 lo, u8 hi) {
     return lo | (hi << 8);
 }
-static inline u16 addrat(emu_t *e, u8 lo, u8 hi) {
-    u16 a = addr(lo, hi);
+static inline u16 addrat(emu_t *e, u16 a) {
     return addr(e->mem[a], e->mem[a+1]);
 }
 
@@ -88,46 +85,64 @@ void print_registers(emu_t *e) {
              e->cpu.a, e->cpu.x, e->cpu.y, e->cpu.s);
 }
 
-void push_to_stack(emu_t *e, u8 b) {
+// push to stack
+void push(emu_t *e, u8 b) {
     if (e->cpu.s == 0)
         util_log(UTIL_WARN, "%s: stack pointer underflow", __func__);
     e->mem[STACK + e->cpu.s--] = b;
 }
-u8 pull_from_stack(emu_t *e) {
+// pull from stack
+u8 pull(emu_t *e) {
     if (e->cpu.s == 0xFF)
         util_log(UTIL_WARN, "%s: stack pointer overflow", __func__);
     return e->mem[STACK + e->cpu.s++];
 }
 
+// addressing mode functions
+
+// accumulator
 inline u8 acc(emu_t *e) { return e->cpu.a; }
+// absolute
 inline u8 ast(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)]; }
+// absolute, x-indexed
 inline u8 abx(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)+e->cpu.x]; }
+// absolute, y-indexed
 inline u8 aby(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)+e->cpu.y]; }
+// immediate
 inline u8 imm(emu_t *e) { return e->oplo; }
-// inline u8 imp(emu_t *e) { UNUSED(e); UNIMPL; return 0;}
-inline u8 ind(emu_t *e) { return e->mem[addrat(e, e->oplo, e->ophi)]; }
-inline u8 xin(emu_t *e) { return e->mem[addrat(e, e->oplo + e->cpu.x, 0)]; }
-inline u8 yin(emu_t *e) { return e->mem[addrat(e, e->oplo, 0) + e->cpu.y]; }
-// inline u8 rel(emu_t *e) { UNUSED(e); UNIMPL; return 0;}
+// indirect
+inline u8 ind(emu_t *e) { return e->mem[addrat(e, addr(e->oplo, e->ophi))]; }
+// x-indexed, indirect
+inline u8 xin(emu_t *e) { return e->mem[addrat(e, addr(e->oplo + e->cpu.x, 0))]; }
+// indirect, y-indexed
+inline u8 yin(emu_t *e) { return e->mem[addrat(e, addr(e->oplo, 0)) + e->cpu.y]; }
+// zeropage
 inline u8 zpg(emu_t *e) { return e->mem[e->oplo]; }
+// zeropage, x-indexed
 inline u8 zpx(emu_t *e) { return e->mem[addr(e->oplo + e->cpu.x, 0)]; }
+// zeropage, y-indexed
 inline u8 zpy(emu_t *e) { return e->mem[addr(e->oplo + e->cpu.y, 0)]; }
 
+// (pointer to) accumulator
 inline u8 *racc(emu_t *e) { return &e->cpu.a; }
+// (pointer to) absolute
 inline u8 *rast(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)]; }
+// (pointer to) absolute, x-indexed
 inline u8 *rabx(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)+e->cpu.x]; }
+// (pointer to) absolute, y-indexed
 inline u8 *raby(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)+e->cpu.y]; }
-// inline u8 *rimm(emu_t *e) { return &e->oplo; }
-// inline u8 *rimp(emu_t *e) { UNUSED(e); UNIMPL; return 0;}
-inline u8 *rind(emu_t *e) { return &e->mem[addrat(e, e->oplo, e->ophi)]; }
-inline u8 *rxin(emu_t *e) { return &e->mem[addrat(e, e->oplo + e->cpu.x, 0)]; }
-inline u8 *ryin(emu_t *e) { return &e->mem[addrat(e, e->oplo, 0) + e->cpu.y]; }
-// inline u8 *rrel(emu_t *e) { UNUSED(e); UNIMPL; return 0;}
+// (pointer to) indirect
+inline u8 *rind(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo, e->ophi))]; }
+// (pointer to) x-indexed, indirect
+inline u8 *rxin(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo + e->cpu.x, 0))]; }
+// (pointer to) indirect, y-indexed
+inline u8 *ryin(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo, 0)) + e->cpu.y]; }
+// (pointer to) zeropage
 inline u8 *rzpg(emu_t *e) { return &e->mem[e->oplo]; }
+// (pointer to) zeropage, x-indexed
 inline u8 *rzpx(emu_t *e) { return &e->mem[addr(e->oplo + e->cpu.x, 0)]; }
+// (pointer to) zeropage, y-indexed
 inline u8 *rzpy(emu_t *e) { return &e->mem[addr(e->oplo + e->cpu.y, 0)]; }
-
-
 
 // add memory to accumulator with carry
 inline void adc(emu_t *e, u8 m) {
@@ -177,13 +192,19 @@ void aslabs(emu_t *e) { asl(e, rast(e)); }
 void aslabx(emu_t *e) { asl(e, rabx(e)); }
 
 // branch on carry clear
-void bccrel(emu_t *e) { UNUSED(e); UNIMPL; }
+void bccrel(emu_t *e) {
+    if ((e->cpu.p & C) != C) e->cpu.pc += (i8)e->oplo;
+}
 
 // branch on carry set
-void bcsrel(emu_t *e) { UNUSED(e); UNIMPL; }
+void bcsrel(emu_t *e) {
+    if ((e->cpu.p & C) == C) e->cpu.pc += (i8)e->oplo;
+}
 
 // branch on result zero
-void beqrel(emu_t *e) { UNUSED(e); UNIMPL; }
+void beqrel(emu_t *e) {
+    if ((e->cpu.p & Z) == Z) e->cpu.pc += (i8)e->oplo;
+}
 
 // test bits in memory with accumulator
 inline void bit(emu_t *e, u8 m) {
@@ -194,26 +215,38 @@ void bitzpg(emu_t *e) { bit(e, zpg(e)); }
 void bitabs(emu_t *e) { bit(e, ast(e)); }
 
 // branch on result minus
-inline void bmi(emu_t *e) { UNUSED(e); UNIMPL; }
-void bmirel(emu_t *e) { UNUSED(e); UNIMPL; }
+void bmirel(emu_t *e) {
+    if ((e->cpu.p & N) == N) e->cpu.pc += (i8)e->oplo;
+}
 
 // branch on result not zero
-inline void bnerel(emu_t *e) { UNUSED(e); UNIMPL; }
+inline void bnerel(emu_t *e) {
+    if ((e->cpu.p & Z) != Z) e->cpu.pc += (i8)e->oplo;
+}
 
 // branch on result plus
-inline void bplrel(emu_t *e) { UNUSED(e); UNIMPL; }
+inline void bplrel(emu_t *e) {
+    if ((e->cpu.p & N) != N) e->cpu.pc += (i8)e->oplo;
+}
 
 // force break
-inline void brk(emu_t *e) { UNUSED(e); UNIMPL; }
-void brkimp(emu_t *e) { UNUSED(e); UNIMPL; }
+void brkimp(emu_t *e) {
+    u16 a = e->cpu.pc + 2;
+    push(e, (a >> 8) & 0xFF);
+    push(e, a & 0xFF);
+    push(e, e->cpu.p | B | O);
+    e->cpu.pc = NMI;
+}
 
 // branch on overflow clear
-inline void bvc(emu_t *e) { UNUSED(e); UNIMPL; }
-void bvcrel(emu_t *e) { UNUSED(e); UNIMPL; }
+void bvcrel(emu_t *e) {
+    if ((e->cpu.p & V) != V) e->cpu.pc += (i8)e->oplo;
+}
 
 // branch on overflow set
-inline void bvs(emu_t *e) { UNUSED(e); UNIMPL; }
-void bvsrel(emu_t *e) { UNUSED(e); UNIMPL; }
+void bvsrel(emu_t *e) {
+    if ((e->cpu.p & V) == V) e->cpu.pc += (i8)e->oplo;
+}
 
 // clear carry flag
 inline void clc(emu_t *e) { e->cpu.p &= ~C; }
@@ -241,7 +274,7 @@ inline void cmp(emu_t *e, u8 m) {
 void cmpimm(emu_t *e) { cmp(e, imm(e)); }
 void cmpzpg(emu_t *e) { cmp(e, zpg(e)); }
 void cmpzpx(emu_t *e) { cmp(e, zpx(e)); }
-void cmpabs(emu_t *e) { cmp(e, abs(e)); }
+void cmpabs(emu_t *e) { cmp(e, ast(e)); }
 void cmpabx(emu_t *e) { cmp(e, abx(e)); }
 void cmpaby(emu_t *e) { cmp(e, aby(e)); }
 void cmpxin(emu_t *e) { cmp(e, xin(e)); }
@@ -339,13 +372,24 @@ void iny(emu_t *e) {
 void inyimp(emu_t *e) { iny(e); }
 
 // jump to new location
-void jmp(emu_t *e) { UNUSED(e); UNIMPL; }
-void jmpabs(emu_t *e) { UNUSED(e); UNIMPL; }
-void jmpind(emu_t *e) { UNUSED(e); UNIMPL; }
+void jmp(emu_t *e, u16 a) {
+    e->cpu.pc = a;
+}
+void jmpabs(emu_t *e) {
+    jmp(e, addr(e->oplo, e->ophi));
+}
+void jmpind(emu_t *e) {
+    jmp(e, addrat(e, addr(e->oplo, e->ophi)));
+}
 
 // jump to new location saving return address
-void jsr(emu_t *e) { UNUSED(e); UNIMPL; }
-void jsrabs(emu_t *e) { UNUSED(e); UNIMPL; }
+void jsrabs(emu_t *e) {
+    u16 a = e->cpu.pc + 2;
+    push(e, (a >> 8) & 0xFF);
+    push(e, a & 0xFF);
+    push(e, e->cpu.p | B | O);
+    e->cpu.pc = addr(e->oplo, e->ophi);
+}
 
 // load accumulator with memory
 void lda(emu_t *e, u8 m) {
@@ -399,8 +443,11 @@ void lsrzpx(emu_t *e) { lsr(e, rzpx(e)); }
 void lsrabx(emu_t *e) { lsr(e, rabx(e)); }
 
 // no operation
-void nop(emu_t *e) { UNUSED(e); }
-void nopimp(emu_t *e) { nop(e); }
+void nopimp(emu_t *e) { UNUSED(e); }
+void badnop(emu_t *e) {
+    UNUSED(e);
+    util_log(UTIL_WARN, "executed illegal opcode %d");
+}
 
 // or memory with accumulator
 inline void ora(emu_t *e, u8 m) {
@@ -419,25 +466,24 @@ void orayin(emu_t *e) { ora(e, yin(e)); }
 
 // push accumulator on stack
 void phaimp(emu_t *e) {
-    push_to_stack(e, e->cpu.a);
+    push(e, e->cpu.a);
 }
 
 // push processor status on stack
 void phpimp(emu_t *e) {
-    push_to_stack(e, e->cpu.p | B | O);
+    push(e, e->cpu.p | B | O);
 }
 
 // pull accumulator from stack
 void plaimp(emu_t *e) {
-    e->cpu.a = pull_from_stack(e);
+    e->cpu.a = pull(e);
     e->cpu.p &= ~(Z|N);
     e->cpu.p |= ZMASK(e->cpu.a) | NMASK(e->cpu.a);
 }
 
 // pull processor status from stack
 void plpimp(emu_t *e) {
-    e->cpu.p = pull_from_stack(e);
-    e->cpu.p &= ~(B|O);
+    e->cpu.p = pull(e) & ~(B|O);
 }
 
 // rotate one bit left (memory or accumulator)
@@ -469,12 +515,17 @@ void rorabs(emu_t *e) { ror(e, rast(e)); }
 void rorabx(emu_t *e) { ror(e, rabx(e)); }
 
 // return from interrupt
-void rti(emu_t *e) { UNUSED(e); UNIMPL; }
-void rtiimp(emu_t *e) { UNUSED(e); UNIMPL; }
+void rtiimp(emu_t *e) {
+    e->cpu.p = pull(e) & ~(B|O);
+    e->cpu.s = pull(e);
+    e->cpu.s |= pull(e) << 8;
+}
 
 // return from subroutine
-void rts(emu_t *e) { UNUSED(e); UNIMPL; }
-void rtsimp(emu_t *e) { UNUSED(e); UNIMPL; }
+void rtsimp(emu_t *e) {
+    e->cpu.s = pull(e);
+    e->cpu.s |= pull(e) << 8;
+}
 
 // subtract memory from accumulator with borrow
 inline void sbc(emu_t *e, u8 m) {
@@ -578,24 +629,32 @@ void tyaimp(emu_t *e) {
     e->cpu.p |= ZMASK(e->cpu.a) | NMASK(e->cpu.a);
 }
 
+// hardware interrupt
+void irq(emu_t *e) {
+    push(e, (e->cpu.pc >> 8) & 0xFF);
+    push(e, e->cpu.pc & 0xFF);
+    push(e, e->cpu.p | O);
+    e->cpu.pc = IRQ;
+}
+
 const isn_t isns[256] = {
 /*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F, */
-/* 0- */ brkimp, oraxin,    nop,    nop,    nop, orazpg, aslzpg,    nop, phpimp, oraimm, aslacc,    nop,    nop, oraabs, aslabs,    nop,
-/* 1- */ bplrel, orayin,    nop,    nop,    nop, orazpx, aslzpx,    nop, clcimp, oraaby,    nop,    nop,    nop, oraabx, aslabx,    nop,
-/* 2- */ jsrabs, andxin,    nop,    nop, bitzpg, andzpg, rolzpg,    nop, plpimp, andimm, rolacc,    nop, bitabs, andabs, rolabs,    nop,
-/* 3- */ bmirel, andyin,    nop,    nop,    nop, andzpx, rolzpx,    nop, secimp, andaby,    nop,    nop,    nop, andabx, rolabx,    nop,
-/* 4- */ rtiimp, eorxin,    nop,    nop,    nop, eorzpg, lsrzpg,    nop, phaimp, eorimm, lsracc,    nop, jmpabs, eorabs, lsrabs,    nop,
-/* 5- */ bvcrel, eoryin,    nop,    nop,    nop, eorzpx, lsrzpx,    nop, cliimp, eoraby,    nop,    nop,    nop, eorabx, lsrabx,    nop,
-/* 6- */ rtsimp, adcxin,    nop,    nop,    nop, adczpg, rorzpg,    nop, plaimp, adcimm, roracc,    nop, jmpind, adcabs, rorabs,    nop,
-/* 7- */ bvsrel, adcyin,    nop,    nop,    nop, adczpx, rorzpx,    nop, seiimp, adcaby,    nop,    nop,    nop, adcabx, rorabx,    nop,
-/* 8- */    nop, staxin,    nop,    nop, styzpg, stazpg, stxzpg,    nop, deyimp,    nop, txaimp,    nop, styabs, staabs, stxabs,    nop,
-/* 9- */ bccrel, stayin,    nop,    nop, styzpx, stazpx, stxzpy,    nop, tyaimp, staaby, txsimp,    nop,    nop, staabx,    nop,    nop,
-/* A- */ ldyimm, ldaxin, ldximm,    nop, ldyzpg, ldazpg, ldxzpg,    nop, tayimp, ldaimm, taximp,    nop, ldyabs, ldaabs, ldxabs,    nop,
-/* B- */ bcsrel, ldayin,    nop,    nop, ldyzpx, ldazpx, ldxzpy,    nop, clvimp, ldaaby, tsximp,    nop, ldyabx, ldaabx, ldxaby,    nop,
-/* C- */ cpyimm, cmpxin,    nop,    nop, cpyzpg, cmpzpg, deczpg,    nop, inyimp, cmpimm, deximp,    nop, cpyabs, cmpabs, decabs,    nop,
-/* D- */ bnerel, cmpyin,    nop,    nop,    nop, cmpzpx, deczpx,    nop, cldimp, cmpaby,    nop,    nop,    nop, cmpabx, decabx,    nop,
-/* E- */ cpximm, sbcxin,    nop,    nop, cpxzpg, sbczpg, inczpg,    nop, inximp, sbcimm, nopimp,    nop, cpxabs, sbcabs, incabs,    nop,
-/* F- */ beqrel, sbcyin,    nop,    nop,    nop, sbczpx, inczpx,    nop, sedimp, sbcaby,    nop,    nop,    nop, sbcabx, incabx,    nop,
+/* 0- */ brkimp, oraxin, badnop, badnop, badnop, orazpg, aslzpg, badnop, phpimp, oraimm, aslacc, badnop, badnop, oraabs, aslabs, badnop,
+/* 1- */ bplrel, orayin, badnop, badnop, badnop, orazpx, aslzpx, badnop, clcimp, oraaby, badnop, badnop, badnop, oraabx, aslabx, badnop,
+/* 2- */ jsrabs, andxin, badnop, badnop, bitzpg, andzpg, rolzpg, badnop, plpimp, andimm, rolacc, badnop, bitabs, andabs, rolabs, badnop,
+/* 3- */ bmirel, andyin, badnop, badnop, badnop, andzpx, rolzpx, badnop, secimp, andaby, badnop, badnop, badnop, andabx, rolabx, badnop,
+/* 4- */ rtiimp, eorxin, badnop, badnop, badnop, eorzpg, lsrzpg, badnop, phaimp, eorimm, lsracc, badnop, jmpabs, eorabs, lsrabs, badnop,
+/* 5- */ bvcrel, eoryin, badnop, badnop, badnop, eorzpx, lsrzpx, badnop, cliimp, eoraby, badnop, badnop, badnop, eorabx, lsrabx, badnop,
+/* 6- */ rtsimp, adcxin, badnop, badnop, badnop, adczpg, rorzpg, badnop, plaimp, adcimm, roracc, badnop, jmpind, adcabs, rorabs, badnop,
+/* 7- */ bvsrel, adcyin, badnop, badnop, badnop, adczpx, rorzpx, badnop, seiimp, adcaby, badnop, badnop, badnop, adcabx, rorabx, badnop,
+/* 8- */ badnop, staxin, badnop, badnop, styzpg, stazpg, stxzpg, badnop, deyimp, badnop, txaimp, badnop, styabs, staabs, stxabs, badnop,
+/* 9- */ bccrel, stayin, badnop, badnop, styzpx, stazpx, stxzpy, badnop, tyaimp, staaby, txsimp, badnop, badnop, staabx, badnop, badnop,
+/* A- */ ldyimm, ldaxin, ldximm, badnop, ldyzpg, ldazpg, ldxzpg, badnop, tayimp, ldaimm, taximp, badnop, ldyabs, ldaabs, ldxabs, badnop,
+/* B- */ bcsrel, ldayin, badnop, badnop, ldyzpx, ldazpx, ldxzpy, badnop, clvimp, ldaaby, tsximp, badnop, ldyabx, ldaabx, ldxaby, badnop,
+/* C- */ cpyimm, cmpxin, badnop, badnop, cpyzpg, cmpzpg, deczpg, badnop, inyimp, cmpimm, deximp, badnop, cpyabs, cmpabs, decabs, badnop,
+/* D- */ bnerel, cmpyin, badnop, badnop, badnop, cmpzpx, deczpx, badnop, cldimp, cmpaby, badnop, badnop, badnop, cmpabx, decabx, badnop,
+/* E- */ cpximm, sbcxin, badnop, badnop, cpxzpg, sbczpg, inczpg, badnop, inximp, sbcimm, nopimp, badnop, cpxabs, sbcabs, incabs, badnop,
+/* F- */ beqrel, sbcyin, badnop, badnop, badnop, sbczpx, inczpx, badnop, sedimp, sbcaby, badnop, badnop, badnop, sbcabx, incabx, badnop,
 };
 
 int
