@@ -56,8 +56,6 @@ typedef struct {
 typedef struct {
     u8 *mem; // size: 0x10000
     cpu_t cpu;
-    u8 oplo;
-    u8 ophi;
 } emu_t;
 
 static inline u16 addr(u8 lo, u8 hi) {
@@ -66,9 +64,6 @@ static inline u16 addr(u8 lo, u8 hi) {
 static inline u16 addrat(emu_t *e, u16 a) {
     return addr(e->mem[a], e->mem[a+1]);
 }
-
-typedef void (*isn_t)(emu_t *e);
-
 
 
 void print_registers(emu_t *e) {
@@ -91,49 +86,111 @@ u8 pull(emu_t *e) {
     return e->mem[STACK + e->cpu.s++];
 }
 
+inline u8 pcnext(emu_t *e) { return e->mem[e->cpu.pc++]; }
+
 // accumulator
 inline u8 acc(emu_t *e) { return e->cpu.a; }
-// absolute
-inline u8 ast(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)]; }
-// absolute, x-indexed
-inline u8 abx(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)+e->cpu.x]; }
-// absolute, y-indexed
-inline u8 aby(emu_t *e) { return e->mem[addr(e->oplo, e->ophi)+e->cpu.y]; }
-// immediate
-inline u8 imm(emu_t *e) { return e->oplo; }
-// indirect
-inline u8 ind(emu_t *e) { return e->mem[addrat(e, addr(e->oplo, e->ophi))]; }
-// x-indexed, indirect
-inline u8 xin(emu_t *e) { return e->mem[addrat(e, addr(e->oplo + e->cpu.x, 0))]; }
-// indirect, y-indexed
-inline u8 yin(emu_t *e) { return e->mem[addrat(e, addr(e->oplo, 0)) + e->cpu.y]; }
-// zeropage
-inline u8 zpg(emu_t *e) { return e->mem[e->oplo]; }
-// zeropage, x-indexed
-inline u8 zpx(emu_t *e) { return e->mem[addr(e->oplo + e->cpu.x, 0)]; }
-// zeropage, y-indexed
-inline u8 zpy(emu_t *e) { return e->mem[addr(e->oplo + e->cpu.y, 0)]; }
-
-// (pointer to) accumulator
 inline u8 *racc(emu_t *e) { return &e->cpu.a; }
-// (pointer to) absolute
-inline u8 *rast(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)]; }
-// (pointer to) absolute, x-indexed
-inline u8 *rabx(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)+e->cpu.x]; }
-// (pointer to) absolute, y-indexed
-inline u8 *raby(emu_t *e) { return &e->mem[addr(e->oplo, e->ophi)+e->cpu.y]; }
-// (pointer to) indirect
-inline u8 *rind(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo, e->ophi))]; }
-// (pointer to) x-indexed, indirect
-inline u8 *rxin(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo + e->cpu.x, 0))]; }
-// (pointer to) indirect, y-indexed
-inline u8 *ryin(emu_t *e) { return &e->mem[addrat(e, addr(e->oplo, 0)) + e->cpu.y]; }
-// (pointer to) zeropage
-inline u8 *rzpg(emu_t *e) { return &e->mem[e->oplo]; }
-// (pointer to) zeropage, x-indexed
-inline u8 *rzpx(emu_t *e) { return &e->mem[addr(e->oplo + e->cpu.x, 0)]; }
-// (pointer to) zeropage, y-indexed
-inline u8 *rzpy(emu_t *e) { return &e->mem[addr(e->oplo + e->cpu.y, 0)]; }
+
+// absolute
+inline u8 ast(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return e->mem[addr(lo, hi)];
+}
+inline u8 *rast(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return &e->mem[addr(lo, hi)];
+}
+
+// absolute, x-indexed
+inline u8 abx(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return e->mem[addr(lo, hi)+e->cpu.x];
+}
+inline u8 *rabx(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return &e->mem[addr(lo, hi)+e->cpu.x];
+}
+
+// absolute, y-indexed
+inline u8 aby(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return e->mem[addr(lo, hi)+e->cpu.y];
+}
+inline u8 *raby(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return &e->mem[addr(lo, hi)+e->cpu.y];
+}
+
+// immediate
+inline u8 imm(emu_t *e) { return pcnext(e); }
+
+// indirect
+inline u8 ind(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return e->mem[addrat(e, addr(lo, hi))];
+}
+inline u8 *rind(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    return &e->mem[addrat(e, addr(lo, hi))];
+}
+
+// x-indexed, indirect
+inline u8 xin(emu_t *e) {
+    u8 lo = pcnext(e);
+    return e->mem[addrat(e, addr(lo + e->cpu.x, 0))];
+}
+inline u8 *rxin(emu_t *e) {
+    u8 lo = pcnext(e);
+    return &e->mem[addrat(e, addr(lo + e->cpu.x, 0))];
+}
+
+// indirect, y-indexed
+inline u8 yin(emu_t *e) {
+    u8 lo = pcnext(e);
+    return e->mem[addrat(e, addr(lo, 0)) + e->cpu.y];
+}
+inline u8 *ryin(emu_t *e) {
+    u8 lo = pcnext(e);
+    return &e->mem[addrat(e, addr(lo, 0)) + e->cpu.y];
+}
+
+// zeropage
+inline u8 zpg(emu_t *e) {
+    return e->mem[pcnext(e)];
+}
+inline u8 *rzpg(emu_t *e) {
+    return &e->mem[pcnext(e)];
+}
+
+// zeropage, x-indexed
+inline u8 zpx(emu_t *e) {
+    u8 lo = pcnext(e);
+    return e->mem[addr(lo + e->cpu.x, 0)];
+}
+inline u8 *rzpx(emu_t *e) {
+    u8 lo = pcnext(e);
+    return &e->mem[addr(lo + e->cpu.x, 0)];
+}
+
+// zeropage, y-indexed
+inline u8 zpy(emu_t *e) {
+    u8 lo = pcnext(e);
+    return e->mem[addr(lo + e->cpu.y, 0)];
+}
+inline u8 *rzpy(emu_t *e) {
+    u8 lo = pcnext(e);
+    return &e->mem[addr(lo + e->cpu.y, 0)];
+}
+
 
 // add memory to accumulator with carry
 inline void adc(emu_t *e, u8 m) {
@@ -184,17 +241,20 @@ void aslabx(emu_t *e) { asl(e, rabx(e)); }
 
 // branch on carry clear
 void bccrel(emu_t *e) {
-    if ((e->cpu.p & C) != C) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & C) != C) e->cpu.pc += (i8)o;
 }
 
 // branch on carry set
 void bcsrel(emu_t *e) {
-    if ((e->cpu.p & C) == C) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & C) == C) e->cpu.pc += (i8)o;
 }
 
 // branch on result zero
 void beqrel(emu_t *e) {
-    if ((e->cpu.p & Z) == Z) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & Z) == Z) e->cpu.pc += (i8)o;
 }
 
 // test bits in memory with accumulator
@@ -207,17 +267,20 @@ void bitabs(emu_t *e) { bit(e, ast(e)); }
 
 // branch on result minus
 void bmirel(emu_t *e) {
-    if ((e->cpu.p & N) == N) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & N) == N) e->cpu.pc += (i8)o;
 }
 
 // branch on result not zero
 inline void bnerel(emu_t *e) {
-    if ((e->cpu.p & Z) != Z) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & Z) != Z) e->cpu.pc += (i8)o;
 }
 
 // branch on result plus
 inline void bplrel(emu_t *e) {
-    if ((e->cpu.p & N) != N) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & N) != N) e->cpu.pc += (i8)o;
 }
 
 // force break
@@ -231,12 +294,14 @@ void brkimp(emu_t *e) {
 
 // branch on overflow clear
 void bvcrel(emu_t *e) {
-    if ((e->cpu.p & V) != V) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & V) != V) e->cpu.pc += (i8)o;
 }
 
 // branch on overflow set
 void bvsrel(emu_t *e) {
-    if ((e->cpu.p & V) == V) e->cpu.pc += (i8)e->oplo;
+    u8 o = pcnext(e);
+    if ((e->cpu.p & V) == V) e->cpu.pc += (i8)o;
 }
 
 // clear carry flag
@@ -347,39 +412,41 @@ void incabs(emu_t *e) { inc(e, rast(e)); }
 void incabx(emu_t *e) { inc(e, rabx(e)); }
 
 // increment x by one
-void inx(emu_t *e) {
+void inximp(emu_t *e) {
     e->cpu.x++;
     e->cpu.p &= ~(Z|N);
     e->cpu.p |= ZMASK(e->cpu.x) | NMASK(e->cpu.x);
 }
-void inximp(emu_t *e) { inx(e); }
 
 // increment y by one
-void iny(emu_t *e) {
+void inyimp(emu_t *e) {
     e->cpu.y++;
     e->cpu.p &= ~(Z|N);
     e->cpu.p |= ZMASK(e->cpu.y) | NMASK(e->cpu.y);
 }
-void inyimp(emu_t *e) { iny(e); }
 
 // jump to new location
-void jmp(emu_t *e, u16 a) {
-    e->cpu.pc = a;
-}
+void jmp(emu_t *e, u16 a) { e->cpu.pc = a; }
 void jmpabs(emu_t *e) {
-    jmp(e, addr(e->oplo, e->ophi));
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    jmp(e, addr(lo, hi));
 }
 void jmpind(emu_t *e) {
-    jmp(e, addrat(e, addr(e->oplo, e->ophi)));
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
+    jmp(e, addrat(e, addr(lo, hi)));
 }
 
 // jump to new location saving return address
 void jsrabs(emu_t *e) {
+    u8 lo = pcnext(e);
+    u8 hi = pcnext(e);
     u16 a = e->cpu.pc + 2;
     push(e, (a >> 8) & 0xFF);
     push(e, a & 0xFF);
     push(e, e->cpu.p | B | O);
-    e->cpu.pc = addr(e->oplo, e->ophi);
+    e->cpu.pc = addr(lo, hi);
 }
 
 // load accumulator with memory
@@ -437,7 +504,8 @@ void lsrabx(emu_t *e) { lsr(e, rabx(e)); }
 void nopimp(emu_t *e) { UNUSED(e); }
 void badnop(emu_t *e) {
     UNUSED(e);
-    ulog(UWARN, "executed illegal opcode %d");
+    u16 a = addrat(e, e->cpu.pc-1);
+    ulog(UWARN, "executed illegal opcode '$%02X' at $'%04X'", e->mem[a], a);
 }
 
 // or memory with accumulator
@@ -456,14 +524,10 @@ void oraxin(emu_t *e) { ora(e, xin(e)); }
 void orayin(emu_t *e) { ora(e, yin(e)); }
 
 // push accumulator on stack
-void phaimp(emu_t *e) {
-    push(e, e->cpu.a);
-}
+void phaimp(emu_t *e) { push(e, e->cpu.a); }
 
 // push processor status on stack
-void phpimp(emu_t *e) {
-    push(e, e->cpu.p | B | O);
-}
+void phpimp(emu_t *e) { push(e, e->cpu.p | B | O); }
 
 // pull accumulator from stack
 void plaimp(emu_t *e) {
@@ -473,9 +537,7 @@ void plaimp(emu_t *e) {
 }
 
 // pull processor status from stack
-void plpimp(emu_t *e) {
-    e->cpu.p = pull(e) & ~(B|O);
-}
+void plpimp(emu_t *e) { e->cpu.p = pull(e) & ~(B|O); }
 
 // rotate one bit left (memory or accumulator)
 void rol(emu_t *e, u8 *m) {
@@ -538,24 +600,16 @@ void sbcxin(emu_t *e) { sbc(e, xin(e)); }
 void sbcyin(emu_t *e) { sbc(e, yin(e)); }
 
 // set carry flag
-void secimp(emu_t *e) {
-    e->cpu.p |= C;
-}
+void secimp(emu_t *e) { e->cpu.p |= C; }
 
 // set decimal flag
-void sedimp(emu_t *e) {
-    e->cpu.p |= D;
-}
+void sedimp(emu_t *e) { e->cpu.p |= D; }
 
 // set interrupt disable status
-void seiimp(emu_t *e) {
-    e->cpu.p |= I;
-}
+void seiimp(emu_t *e) { e->cpu.p |= I; }
 
 // store accumulator in memory
-void sta(emu_t *e, u8 *m) {
-    *m = e->cpu.a;
-}
+void sta(emu_t *e, u8 *m) { *m = e->cpu.a; }
 void stazpg(emu_t *e) { sta(e, rzpg(e)); }
 void stazpx(emu_t *e) { sta(e, rzpx(e)); }
 void staabs(emu_t *e) { sta(e, rast(e)); }
@@ -565,17 +619,13 @@ void staxin(emu_t *e) { sta(e, rxin(e)); }
 void stayin(emu_t *e) { sta(e, ryin(e)); }
 
 // store index x in memory
-void stx(emu_t *e, u8 *m) {
-    *m = e->cpu.x;
-}
+void stx(emu_t *e, u8 *m) { *m = e->cpu.x; }
 void stxzpg(emu_t *e) { stx(e, rzpg(e)); }
 void stxzpy(emu_t *e) { stx(e, rzpy(e)); }
 void stxabs(emu_t *e) { stx(e, rast(e)); }
 
 // store index y in memory
-void sty(emu_t *e, u8 *m) {
-    *m = e->cpu.y;
-}
+void sty(emu_t *e, u8 *m) { *m = e->cpu.y; }
 void styzpg(emu_t *e) { sty(e, rzpg(e)); }
 void styzpx(emu_t *e) { sty(e, rzpx(e)); }
 void styabs(emu_t *e) { sty(e, rast(e)); }
@@ -609,9 +659,7 @@ void txaimp(emu_t *e) {
 }
 
 // transfer index x to stack register
-void txsimp(emu_t *e) {
-    e->cpu.s = e->cpu.x;
-}
+void txsimp(emu_t *e) { e->cpu.s = e->cpu.x; }
 
 // transfer index y to accumulator
 void tyaimp(emu_t *e) {
@@ -628,6 +676,7 @@ void irq(emu_t *e) {
     e->cpu.pc = IRQ;
 }
 
+typedef void (*isn_t)(emu_t *e);
 const isn_t isns[256] = {
 /*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F,       */
 /* 0- */ brkimp, oraxin, badnop, badnop, badnop, orazpg, aslzpg, badnop, phpimp, oraimm, aslacc, badnop, badnop, oraabs, aslabs, badnop, /* 0- */
