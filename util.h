@@ -1,37 +1,53 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdlib.h>
+
 typedef enum {
-    UTIL_INFO,
-    UTIL_WARN,
-    UTIL_FATL,
+    UINFO,
+    UWARN,
+    UFATL,
 } UtilLogLvl;
+
+#ifndef UASSERT
+#include <assert.h>
+#include <stdlib.h>
+#define UASSERT(c) \
+    do { \
+        if (!c) { \
+            ulog(UFATL, "%s:%d %s assertion failed '%s'", \
+                     __FILE__, __LINE__, __func__, #c); \
+            abort(); \
+        } \
+    } while (0)
+#endif
 
 #define UNIMPL \
     do { \
-        util_log(UTIL_WARN, "%s:%d %s unimplemented", __FILE__, __LINE__, __func__); \
+        ulog(UWARN, "%s:%d %s unimplemented", __FILE__, __LINE__, __func__); \
     } while (0)
 
 #define UNUSED(x) ((void)(x))
 
-void util_log(UtilLogLvl lvl, const char *fmt, ...);
+void ulog(UtilLogLvl lvl, const char *fmt, ...);
+void *umalloc(size_t size);
 
-#endif // UTIL_H
+#endif // UH
 
 
-#ifdef UTIL_IMPL
+#ifdef UIMPL
 
 #include <stdio.h>
 #include <stdarg.h>
 
 void
-util_log(UtilLogLvl lvl, const char *fmt, ...)
+ulog(UtilLogLvl lvl, const char *fmt, ...)
 {
     const char *tag;
     switch (lvl) {
-    case UTIL_INFO: tag = "INFO"; break;
-    case UTIL_WARN: tag = "WARN"; break;
-    case UTIL_FATL: tag = "FATL"; break;
+    case UINFO: tag = "INFO"; break;
+    case UWARN: tag = "WARN"; break;
+    case UFATL: tag = "FATL"; break;
     default: break;
     }
     fprintf(stdout, "[%s] ", tag);
@@ -42,6 +58,13 @@ util_log(UtilLogLvl lvl, const char *fmt, ...)
     va_end(v);
 }
 
+void *
+umalloc(size_t size)
+{
+    void *p = malloc(size);
+    UASSERT(p);
+    return p;
+}
 
 #endif // UTIL_IMPL
 

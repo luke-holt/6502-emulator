@@ -1,9 +1,11 @@
-#include <linux/limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #define UTIL_IMPL
 #include "util.h"
 
+
+#define MEMSIZE (0x10000)
 
 // reserved memory pages
 #define ZERO_PAGE (0)
@@ -37,8 +39,6 @@
 #define NMASK(b) ((b) & N)
 #define VMASK(b) ((b) & V)
 
-#define CLRMASK(byte, mask) ((byte) & ~(mask)) // clear mask bits in byte
-
 typedef unsigned char u8;
 typedef char i8;
 typedef unsigned short u16;
@@ -69,18 +69,11 @@ static inline u16 addrat(emu_t *e, u16 a) {
 
 typedef void (*isn_t)(emu_t *e);
 
-void emu_init(emu_t *e) {
-    e->cpu.pc = addrat(e, RES);
-    e->cpu.a = 0;
-    e->cpu.x = 0;
-    e->cpu.y = 0;
-    e->cpu.p = 0;
-    e->cpu.s = 0;
-}
+
 
 void print_registers(emu_t *e) {
-    util_log(UTIL_INFO, " PC  IRQ  SR AC XR YR SP");
-    util_log(UTIL_INFO, "%04X %04X %02X %02X %02X %02X %02X",
+    ulog(UINFO, " PC  IRQ  SR AC XR YR SP");
+    ulog(UINFO, "%04X %04X %02X %02X %02X %02X %02X",
              e->cpu.pc, addrat(e, IRQ), e->cpu.p,
              e->cpu.a, e->cpu.x, e->cpu.y, e->cpu.s);
 }
@@ -88,17 +81,15 @@ void print_registers(emu_t *e) {
 // push to stack
 void push(emu_t *e, u8 b) {
     if (e->cpu.s == 0)
-        util_log(UTIL_WARN, "%s: stack pointer underflow", __func__);
+        ulog(UWARN, "%s: stack pointer underflow", __func__);
     e->mem[STACK + e->cpu.s--] = b;
 }
 // pull from stack
 u8 pull(emu_t *e) {
     if (e->cpu.s == 0xFF)
-        util_log(UTIL_WARN, "%s: stack pointer overflow", __func__);
+        ulog(UWARN, "%s: stack pointer overflow", __func__);
     return e->mem[STACK + e->cpu.s++];
 }
-
-// addressing mode functions
 
 // accumulator
 inline u8 acc(emu_t *e) { return e->cpu.a; }
@@ -446,7 +437,7 @@ void lsrabx(emu_t *e) { lsr(e, rabx(e)); }
 void nopimp(emu_t *e) { UNUSED(e); }
 void badnop(emu_t *e) {
     UNUSED(e);
-    util_log(UTIL_WARN, "executed illegal opcode %d");
+    ulog(UWARN, "executed illegal opcode %d");
 }
 
 // or memory with accumulator
@@ -638,24 +629,41 @@ void irq(emu_t *e) {
 }
 
 const isn_t isns[256] = {
-/*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F, */
-/* 0- */ brkimp, oraxin, badnop, badnop, badnop, orazpg, aslzpg, badnop, phpimp, oraimm, aslacc, badnop, badnop, oraabs, aslabs, badnop,
-/* 1- */ bplrel, orayin, badnop, badnop, badnop, orazpx, aslzpx, badnop, clcimp, oraaby, badnop, badnop, badnop, oraabx, aslabx, badnop,
-/* 2- */ jsrabs, andxin, badnop, badnop, bitzpg, andzpg, rolzpg, badnop, plpimp, andimm, rolacc, badnop, bitabs, andabs, rolabs, badnop,
-/* 3- */ bmirel, andyin, badnop, badnop, badnop, andzpx, rolzpx, badnop, secimp, andaby, badnop, badnop, badnop, andabx, rolabx, badnop,
-/* 4- */ rtiimp, eorxin, badnop, badnop, badnop, eorzpg, lsrzpg, badnop, phaimp, eorimm, lsracc, badnop, jmpabs, eorabs, lsrabs, badnop,
-/* 5- */ bvcrel, eoryin, badnop, badnop, badnop, eorzpx, lsrzpx, badnop, cliimp, eoraby, badnop, badnop, badnop, eorabx, lsrabx, badnop,
-/* 6- */ rtsimp, adcxin, badnop, badnop, badnop, adczpg, rorzpg, badnop, plaimp, adcimm, roracc, badnop, jmpind, adcabs, rorabs, badnop,
-/* 7- */ bvsrel, adcyin, badnop, badnop, badnop, adczpx, rorzpx, badnop, seiimp, adcaby, badnop, badnop, badnop, adcabx, rorabx, badnop,
-/* 8- */ badnop, staxin, badnop, badnop, styzpg, stazpg, stxzpg, badnop, deyimp, badnop, txaimp, badnop, styabs, staabs, stxabs, badnop,
-/* 9- */ bccrel, stayin, badnop, badnop, styzpx, stazpx, stxzpy, badnop, tyaimp, staaby, txsimp, badnop, badnop, staabx, badnop, badnop,
-/* A- */ ldyimm, ldaxin, ldximm, badnop, ldyzpg, ldazpg, ldxzpg, badnop, tayimp, ldaimm, taximp, badnop, ldyabs, ldaabs, ldxabs, badnop,
-/* B- */ bcsrel, ldayin, badnop, badnop, ldyzpx, ldazpx, ldxzpy, badnop, clvimp, ldaaby, tsximp, badnop, ldyabx, ldaabx, ldxaby, badnop,
-/* C- */ cpyimm, cmpxin, badnop, badnop, cpyzpg, cmpzpg, deczpg, badnop, inyimp, cmpimm, deximp, badnop, cpyabs, cmpabs, decabs, badnop,
-/* D- */ bnerel, cmpyin, badnop, badnop, badnop, cmpzpx, deczpx, badnop, cldimp, cmpaby, badnop, badnop, badnop, cmpabx, decabx, badnop,
-/* E- */ cpximm, sbcxin, badnop, badnop, cpxzpg, sbczpg, inczpg, badnop, inximp, sbcimm, nopimp, badnop, cpxabs, sbcabs, incabs, badnop,
-/* F- */ beqrel, sbcyin, badnop, badnop, badnop, sbczpx, inczpx, badnop, sedimp, sbcaby, badnop, badnop, badnop, sbcabx, incabx, badnop,
+/*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F,       */
+/* 0- */ brkimp, oraxin, badnop, badnop, badnop, orazpg, aslzpg, badnop, phpimp, oraimm, aslacc, badnop, badnop, oraabs, aslabs, badnop, /* 0- */
+/* 1- */ bplrel, orayin, badnop, badnop, badnop, orazpx, aslzpx, badnop, clcimp, oraaby, badnop, badnop, badnop, oraabx, aslabx, badnop, /* 1- */
+/* 2- */ jsrabs, andxin, badnop, badnop, bitzpg, andzpg, rolzpg, badnop, plpimp, andimm, rolacc, badnop, bitabs, andabs, rolabs, badnop, /* 2- */
+/* 3- */ bmirel, andyin, badnop, badnop, badnop, andzpx, rolzpx, badnop, secimp, andaby, badnop, badnop, badnop, andabx, rolabx, badnop, /* 3- */
+/* 4- */ rtiimp, eorxin, badnop, badnop, badnop, eorzpg, lsrzpg, badnop, phaimp, eorimm, lsracc, badnop, jmpabs, eorabs, lsrabs, badnop, /* 4- */
+/* 5- */ bvcrel, eoryin, badnop, badnop, badnop, eorzpx, lsrzpx, badnop, cliimp, eoraby, badnop, badnop, badnop, eorabx, lsrabx, badnop, /* 5- */
+/* 6- */ rtsimp, adcxin, badnop, badnop, badnop, adczpg, rorzpg, badnop, plaimp, adcimm, roracc, badnop, jmpind, adcabs, rorabs, badnop, /* 6- */
+/* 7- */ bvsrel, adcyin, badnop, badnop, badnop, adczpx, rorzpx, badnop, seiimp, adcaby, badnop, badnop, badnop, adcabx, rorabx, badnop, /* 7- */
+/* 8- */ badnop, staxin, badnop, badnop, styzpg, stazpg, stxzpg, badnop, deyimp, badnop, txaimp, badnop, styabs, staabs, stxabs, badnop, /* 8- */
+/* 9- */ bccrel, stayin, badnop, badnop, styzpx, stazpx, stxzpy, badnop, tyaimp, staaby, txsimp, badnop, badnop, staabx, badnop, badnop, /* 9- */
+/* A- */ ldyimm, ldaxin, ldximm, badnop, ldyzpg, ldazpg, ldxzpg, badnop, tayimp, ldaimm, taximp, badnop, ldyabs, ldaabs, ldxabs, badnop, /* A- */
+/* B- */ bcsrel, ldayin, badnop, badnop, ldyzpx, ldazpx, ldxzpy, badnop, clvimp, ldaaby, tsximp, badnop, ldyabx, ldaabx, ldxaby, badnop, /* B- */
+/* C- */ cpyimm, cmpxin, badnop, badnop, cpyzpg, cmpzpg, deczpg, badnop, inyimp, cmpimm, deximp, badnop, cpyabs, cmpabs, decabs, badnop, /* C- */
+/* D- */ bnerel, cmpyin, badnop, badnop, badnop, cmpzpx, deczpx, badnop, cldimp, cmpaby, badnop, badnop, badnop, cmpabx, decabx, badnop, /* D- */
+/* E- */ cpximm, sbcxin, badnop, badnop, cpxzpg, sbczpg, inczpg, badnop, inximp, sbcimm, nopimp, badnop, cpxabs, sbcabs, incabs, badnop, /* E- */
+/* F- */ beqrel, sbcyin, badnop, badnop, badnop, sbczpx, inczpx, badnop, sedimp, sbcaby, badnop, badnop, badnop, sbcabx, incabx, badnop, /* F- */
+/*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F,       */
 };
+
+void emu_init(emu_t *e, u8 program[MEMSIZE], u16 size) {
+    memset(e, 0, sizeof(*e));
+    e->mem = umalloc(MEMSIZE);
+    memcpy(e->mem, program, size);
+    e->cpu.pc = addrat(e, RES);
+}
+
+void emu_end(emu_t *e) {
+    free(e->mem);
+    memset(e, 0, sizeof(*e));
+}
+
+void emu_step(emu_t *e) {
+    isns[e->mem[e->cpu.pc]](e);
+}
 
 int
 main(int argc, char *argv[])
