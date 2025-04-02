@@ -32,10 +32,10 @@ typedef enum {
 void ulog(UtilLogLvl lvl, const char *fmt, ...);
 void *umalloc(size_t size);
 
-#endif // UH
+#endif // UTIL_H
 
 
-#ifdef UIMPL
+#ifdef UTIL_IMPL
 
 #include <stdio.h>
 #include <stdarg.h>

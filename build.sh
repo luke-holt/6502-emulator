@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-gcc -o 6502-emulator main.c
+gcc -o emulator emu.c main.c
