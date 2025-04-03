@@ -29,7 +29,7 @@
 #define VMASK(b) ((b) & V)
 
 static inline u16 addr(u8 lo, u8 hi) {
-    return lo | (hi << 8);
+    return (u16)lo | ((u16)hi << 8);
 }
 static inline u16 addrat(emu_t *e, u16 a) {
     return addr(e->mem[a], e->mem[a+1]);
@@ -683,7 +683,7 @@ void emu_end(emu_t *e) {
 
 void emu_step(emu_t *e) {
     UASSERT(e);
-    isns[e->mem[pcnext(e)]](e);
+    isns[pcnext(e)](e);
 }
 
 void emu_log_state(emu_t *e) {
@@ -691,4 +691,8 @@ void emu_log_state(emu_t *e) {
     ulog(UINFO, "%04X %04X %02X %02X %02X %02X %02X",
          e->cpu.pc, addrat(e, IRQ), e->cpu.p,
          e->cpu.a, e->cpu.x, e->cpu.y, e->cpu.s);
+}
+
+void emu_log_next_insn(emu_t *e) {
+    ulog(UINFO, "insn %02X",  e->mem[e->cpu.pc]);
 }

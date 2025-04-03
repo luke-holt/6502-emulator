@@ -6,7 +6,9 @@
 int
 main(int argc, char *argv[])
 {
-    ulog(UINFO, "wtf");
+    // flush stdin
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
 
     u8 prog[MEMSIZE] = {
         [0] = 0xA2, // LDX
@@ -15,7 +17,7 @@ main(int argc, char *argv[])
         [3] = 0xE0, // CPX #$10
         [4] = 0x10,
         [5] = 0xD0, // BEQ
-        [6] = (i8)-4,
+        [6] = (i8)-5,
         [7] = 0x6C, // JMP (NMI)
         [8] = NMI & 0xFF,
         [9] = (NMI >> 8) & 0xFF,
@@ -31,7 +33,15 @@ main(int argc, char *argv[])
     emu_t e;
     emu_init(&e, prog, MEMSIZE);
 
+    char input[256];
     while (1) {
+        fgets(input, sizeof(input), stdin);
+        if (input[0] == 'q')
+            break;
+        else if (input[0] == 'c')
+            ;
+
+        emu_log_next_insn(&e);
         emu_step(&e);
         emu_log_state(&e);
     }

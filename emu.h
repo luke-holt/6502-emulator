@@ -35,5 +35,6 @@ void emu_init(emu_t *e, const u8 *prog, int size);
 void emu_end(emu_t *e);
 void emu_step(emu_t *e);
 void emu_log_state(emu_t *e);
+void emu_log_next_insn(emu_t *e);
 
 #endif // EMU_H
