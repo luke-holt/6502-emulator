@@ -644,7 +644,7 @@ static void irq(emu_t *e) {
 }
 
 typedef void (*isn_t)(emu_t *e);
-const isn_t isns[256] = {
+const isn_t insns[256] = {
 /*           -0,     -1,     -2,     -3,     -4,     -5,     -6,     -7,     -8,     -9,     -A,     -B,     -C,     -D,     -E,     -F,       */
 /* 0- */ brkimp, oraxin, badnop, badnop, badnop, orazpg, aslzpg, badnop, phpimp, oraimm, aslacc, badnop, badnop, oraabs, aslabs, badnop, /* 0- */
 /* 1- */ bplrel, orayin, badnop, badnop, badnop, orazpx, aslzpx, badnop, clcimp, oraaby, badnop, badnop, badnop, oraabx, aslabx, badnop, /* 1- */
@@ -683,7 +683,7 @@ void emu_end(emu_t *e) {
 
 void emu_step(emu_t *e) {
     UASSERT(e);
-    isns[pcnext(e)](e);
+    insns[pcnext(e)](e);
 }
 
 void emu_log_state(emu_t *e) {
@@ -696,3 +696,4 @@ void emu_log_state(emu_t *e) {
 void emu_log_next_insn(emu_t *e) {
     ulog(UINFO, "insn %02X",  e->mem[e->cpu.pc]);
 }
+

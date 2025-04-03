@@ -4,10 +4,13 @@
 #include <stdlib.h>
 
 typedef enum {
+    UNONE,
     UINFO,
     UWARN,
     UFATL,
 } UtilLogLvl;
+
+#define ARRLEN(arr) (sizeof(arr) / sizeof(*arr))
 
 #ifndef UASSERT
 #include <assert.h>
@@ -45,12 +48,12 @@ ulog(UtilLogLvl lvl, const char *fmt, ...)
 {
     const char *tag;
     switch (lvl) {
-    case UINFO: tag = "INFO"; break;
-    case UWARN: tag = "WARN"; break;
-    case UFATL: tag = "FATL"; break;
+    case UNONE: break;
+    case UINFO: fprintf(stdout, "[INFO] "); break;
+    case UWARN: fprintf(stdout, "[WARN] "); break;
+    case UFATL: fprintf(stdout, "[FATL] "); break;
     default: break;
     }
-    fprintf(stdout, "[%s] ", tag);
 
     va_list v;
     va_start(v, fmt);
