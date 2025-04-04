@@ -119,3 +119,68 @@ static const int insnmap[256] = {
 };
 
 #endif // INSN_H
+
+
+#define INSN_IMPL
+#ifdef INSN_IMPL
+
+#include <stdio.h>
+#include <string.h>
+
+// opcode dissassembly
+static const char *opcdasm(u8 opc, u8 lo, u8 hi) {
+    static char str[64];
+    memset(str, 0, sizeof(str));
+
+    // instruction name
+    const char *name = insnnames[insnmap[opc]][0];
+
+    switch (modemap[opc]) {
+    case 0x0:
+        snprintf(str, sizeof(str), "%02X -> %s %s", opc, name, "A");
+        break;
+    case 0x1:
+        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X", opc, lo, hi, name, lo, hi);
+        break;
+    case 0x2:
+        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X,X", opc, lo, hi, name, lo, hi);
+        break;
+    case 0x3:
+        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X,Y", opc, lo, hi, name, lo, hi);
+        break;
+    case 0x4:
+        snprintf(str, sizeof(str), "%02X %02X -> %s #$%02X", opc, lo, name, lo);
+        break;
+    case 0x5:
+        snprintf(str, sizeof(str), "%02X -> %s", opc, name);
+        break;
+    case 0x6:
+        snprintf(str, sizeof(str), "%02X %02X %02X -> %s ($%02X%02X)", opc, lo, hi, name, lo, hi);
+        break;
+    case 0x7:
+        snprintf(str, sizeof(str), "%02X %02X -> %s ($%02X,X)", opc, lo, name, lo);
+        break;
+    case 0x8:
+        snprintf(str, sizeof(str), "%02X %02X -> %s ($%02X),Y", opc, lo, name, lo);
+        break;
+    case 0x9:
+        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X", opc, lo, name, lo);
+        break;
+    case 0xA:
+        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X", opc, lo, name, lo);
+        break;
+    case 0xB:
+        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X,X", opc, lo, name, lo);
+        break;
+    case 0xC:
+        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X,Y", opc, lo, name, lo);
+        break;
+    default:
+        snprintf(str, sizeof(str), "%02X -> invalid opcode", opc);
+        break;
+    }
+
+    return str;
+}
+
+#endif // INSN_IMPL

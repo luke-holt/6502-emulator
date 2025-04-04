@@ -4,6 +4,9 @@
 
 #include "util.h"
 
+#define INSN_IMPL
+#include "insn.h" 
+
 #define STACK (0x100)
 
 #define B0 (0x01)
@@ -687,13 +690,24 @@ void emu_step(emu_t *e) {
 }
 
 void emu_log_state(emu_t *e) {
-    ulog(UINFO, " PC  IRQ  SR AC XR YR SP");
-    ulog(UINFO, "%04X %04X %02X %02X %02X %02X %02X",
-         e->cpu.pc, addrat(e, IRQ), e->cpu.p,
-         e->cpu.a, e->cpu.x, e->cpu.y, e->cpu.s);
+    ulog(UINFO, "PC: %04X", e->cpu.pc);
+    ulog(UINFO, "SR: %02X %c%c..%c%c%c%c", e->cpu.p,
+         (e->cpu.p & N) ? 'N' : 'n',
+         (e->cpu.p & V) ? 'V' : 'v',
+         (e->cpu.p & D) ? 'D' : 'd',
+         (e->cpu.p & I) ? 'I' : 'i',
+         (e->cpu.p & Z) ? 'Z' : 'z',
+         (e->cpu.p & C) ? 'C' : 'c');
+    ulog(UINFO, "AC: %02X", e->cpu.a);
+    ulog(UINFO, "XR: %02X", e->cpu.x);
+    ulog(UINFO, "YR: %02X", e->cpu.y);
+    ulog(UINFO, "SP: %02X", e->cpu.s);
 }
 
 void emu_log_next_insn(emu_t *e) {
-    ulog(UINFO, "insn %02X",  e->mem[e->cpu.pc]);
+    u8 opc = e->mem[e->cpu.pc];
+    u8 lo = e->mem[(u16)e->cpu.pc+1];
+    u8 hi = e->mem[(u16)e->cpu.pc+2];
+    ulog(UINFO, "%s", opcdasm(opc, lo, hi));
 }
 
