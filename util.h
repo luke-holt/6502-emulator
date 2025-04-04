@@ -46,7 +46,6 @@ void *umalloc(size_t size);
 void
 ulog(UtilLogLvl lvl, const char *fmt, ...)
 {
-    const char *tag;
     switch (lvl) {
     case UNONE: break;
     case UINFO: fprintf(stdout, "[INFO] "); break;

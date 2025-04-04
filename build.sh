@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-gcc -o emulator emu.c main.c
-gcc -o insn insn.c
+gcc -o emu emu.c main.c -Wall
+gcc -o insn insn.c -Wall
