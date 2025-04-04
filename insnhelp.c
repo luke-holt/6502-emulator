@@ -52,13 +52,13 @@ main(int argc, char *argv[])
 void
 print_mode_title_row(void) {
     // 3, 19, 11, 5, 114
-    ulog(UNONE, "%-5s %-19s %-11s %-5s %s", "Abbr", "Mode", "Syntax", "Bytes", "Description");
+    ulog(UNONE, "%-5s  %-19s  %-11s  %-5s  %s", "Abbr", "Mode", "Syntax", "Bytes", "Description");
 }
 
 void
 print_mode_row(int i) {
     // 3, 19, 11, 5, 114
-    ulog(UNONE, "%-5s %-19s %-11s %-5s %s", modeinfo[i][0], modeinfo[i][1], modeinfo[i][2], modeinfo[i][3], modeinfo[i][4]);
+    ulog(UNONE, "%-5s  %-19s  %-11s  %-5s  %s", modeinfo[i][0], modeinfo[i][1], modeinfo[i][2], modeinfo[i][3], modeinfo[i][4]);
 }
 
 void
