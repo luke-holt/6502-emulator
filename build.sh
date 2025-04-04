@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-gcc -o emu emu.c main.c -Wall
-gcc -o insn insn.c -Wall
+gcc -o emu emu.c main.c -Wall -pedantic
+gcc -o insn insn.c -Wall -pedantic

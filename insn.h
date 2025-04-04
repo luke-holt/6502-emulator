@@ -63,7 +63,7 @@ static const char *insnnames[56][2] = {
 };
 
 // abbreviated, un-abbreviated, syntax, description
-static const char *modenames[14][4] = {
+static const char *modeinfo[14][4] = {
     [0x0] = {"A",     "Accumulator",         "OPC A",       "operand is AC (implied single byte instruction)"},
     [0x1] = {"abs",   "absolute",            "OPC $LLHH",   "operand is address $HHLL *"},
     [0x2] = {"abs,X", "absolute, X-indexed", "OPC $LLHH,X", "operand is address; effective address is address incremented by X with carry **"},
