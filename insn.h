@@ -65,18 +65,18 @@ static const char *insnnames[56][2] = {
 // abbreviated, un-abbreviated, syntax, byte count, description
 static const char *modeinfo[14][5] = {
     [0x0] = {"A",     "Accumulator",         "OPC A",       "1", "operand is AC (implied single byte instruction)"},
-    [0x1] = {"abs",   "absolute",            "OPC $LLHH",   "3", "operand is address $HHLL *"},
-    [0x2] = {"abs,X", "absolute, X-indexed", "OPC $LLHH,X", "3", "operand is address; effective address is address incremented by X with carry **"},
-    [0x3] = {"abs,Y", "absolute, Y-indexed", "OPC $LLHH,Y", "3", "operand is address; effective address is address incremented by Y with carry **"},
+    [0x1] = {"abs",   "absolute",            "OPC $LLHH",   "3", "operand is address $HHLL"},
+    [0x2] = {"abs,X", "absolute, X-indexed", "OPC $LLHH,X", "3", "operand is address; effective address is address incremented by X with carry"},
+    [0x3] = {"abs,Y", "absolute, Y-indexed", "OPC $LLHH,Y", "3", "operand is address; effective address is address incremented by Y with carry"},
     [0x4] = {"#",     "immediate",           "OPC #$BB",    "2", "operand is byte BB"},
     [0x5] = {"impl",  "implied",             "OPC",         "1", "operand implied"},
     [0x6] = {"ind",   "indirect",            "OPC ($LLHH)", "3", "operand is address; effective address is contents of word at address: C.w($HHLL)"},
     [0x7] = {"X,ind", "X-indexed, indirect", "OPC ($LL,X)", "2", "operand is zeropage address; effective address is word in (LL + X, LL + X + 1), inc. without carry: C.w($00LL + X)"},
     [0x8] = {"ind,Y", "indirect, Y-indexed", "OPC ($LL),Y", "2", "operand is zeropage address; effective address is word in (LL, LL + 1) incremented by Y with carry: C.w($00LL) + Y"},
-    [0x9] = {"rel",   "relative",            "OPC $BB",     "2", "branch target is PC + signed offset BB ***"},
+    [0x9] = {"rel",   "relative",            "OPC $BB",     "2", "branch target is PC + signed offset BB"},
     [0xA] = {"zpg",   "zeropage",            "OPC $LL",     "2", "operand is zeropage address (hi-byte is zero, address = $00LL)"},
-    [0xB] = {"zpg,X", "zeropage, X-indexed", "OPC $LL,X",   "2", "operand is zeropage address; effective address is address incremented by X without carry **"},
-    [0xC] = {"zpg,Y", "zeropage, Y-indexed", "OPC $LL,Y",   "2", "operand is zeropage address; effective address is address incremented by Y without carry **"},
+    [0xB] = {"zpg,X", "zeropage, X-indexed", "OPC $LL,X",   "2", "operand is zeropage address; effective address is address incremented by X without carry"},
+    [0xC] = {"zpg,Y", "zeropage, Y-indexed", "OPC $LL,Y",   "2", "operand is zeropage address; effective address is address incremented by Y without carry"},
     [0xD] = {"n/a",   "invalid",             "n/a",         "0", "invalid addressing mode"},
 };
 
