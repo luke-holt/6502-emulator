@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <stdlib.h>
+#include <string.h>
 
 typedef enum {
     UNONE,
@@ -10,7 +11,41 @@ typedef enum {
     UFATL,
 } UtilLogLvl;
 
+void ulog(UtilLogLvl lvl, const char *fmt, ...);
+void *umalloc(size_t size);
+void *urealloc(void *p, size_t size);
+
 #define ARRLEN(arr) (sizeof(arr) / sizeof(*arr))
+
+#define da_init(da) \
+    do { \
+        (da)->capacity = 256; \
+        (da)->items = umalloc(sizeof(*(da)->items)*(da)->capacity); \
+    } while (0)
+#define da_delete(da) \
+    do { \
+        UASSERT(da); \
+        free((da)->items); \
+        (da)->items = NULL; \
+        (da)->count = 0; \
+        (da)->capacity = 0; \
+    } while (0)
+#define da_resize(da, cap) \
+    do { \
+        (da)->capacity = (cap); \
+        (da)->items = urealloc((da)->items, sizeof(*(da)->items)*(da)->capacity); \
+    } while (0)
+#define da_append(da, item) \
+    do { \
+        if ((da)->count >= (da)->capacity) da_resize((da), (da)->capacity*2); \
+        (da)->items[(da)->count++] = (item); \
+    } while (0)
+#define da_append_many(da, list, len) \
+    do { \
+        while ((da)->capacity <= ((da)->count + (len))) (da)->capacity *= 2; \
+        da_resize((da), (da)->capacity); \
+        memcpy(&(da)->items[(da)->count], (list), (len)*sizeof(*(da)->items)); \
+    } while (0)
 
 #ifndef UASSERT
 #include <assert.h>
@@ -31,9 +66,6 @@ typedef enum {
     } while (0)
 
 #define UNUSED(x) ((void)(x))
-
-void ulog(UtilLogLvl lvl, const char *fmt, ...);
-void *umalloc(size_t size);
 
 #endif // UTIL_H
 
@@ -66,6 +98,14 @@ void *
 umalloc(size_t size)
 {
     void *p = malloc(size);
+    UASSERT(p);
+    return p;
+}
+
+void *
+urealloc(void *p, size_t size)
+{
+    p = realloc(p, size);
     UASSERT(p);
     return p;
 }

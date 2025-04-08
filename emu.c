@@ -2,10 +2,9 @@
 
 #include "emu.h"
 
-#include "util.h"
-
-#define INSN_IMPL
+#include "asm.h"
 #include "insn.h" 
+#include "util.h"
 
 #define STACK (0x100)
 
@@ -708,6 +707,6 @@ void emu_log_next_insn(emu_t *e) {
     u8 opc = e->mem[e->cpu.pc];
     u8 lo = e->mem[(u16)e->cpu.pc+1];
     u8 hi = e->mem[(u16)e->cpu.pc+2];
-    ulog(UINFO, "%s", opcdasm(opc, lo, hi));
+    ulog(UINFO, "%s", asm_disassemble_opcode(opc, lo, hi));
 }
 

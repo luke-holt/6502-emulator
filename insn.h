@@ -3,184 +3,156 @@
 
 typedef unsigned char u8;
 
-static const char *insnnames[56][2] = {
-    [0x00] = {"ADC", "add with carry"},
-    [0x01] = {"AND", "and (with accumulator)"},
-    [0x02] = {"ASL", "arithmetic shift left"},
-    [0x03] = {"BCC", "branch on carry clear"},
-    [0x04] = {"BCS", "branch on carry set"},
-    [0x05] = {"BEQ", "branch on equal (zero set)"},
-    [0x06] = {"BIT", "bit test"},
-    [0x07] = {"BMI", "branch on minus (negative set)"},
-    [0x08] = {"BNE", "branch on not equal (zero clear)"},
-    [0x09] = {"BPL", "branch on plus (negative clear)"},
-    [0x0A] = {"BRK", "break / interrupt"},
-    [0x0B] = {"BVC", "branch on overflow clear"},
-    [0x0C] = {"BVS", "branch on overflow set"},
-    [0x0D] = {"CLC", "clear carry"},
-    [0x0E] = {"CLD", "clear decimal"},
-    [0x0F] = {"CLI", "clear interrupt disable"},
-    [0x10] = {"CLV", "clear overflow"},
-    [0x11] = {"CMP", "compare (with accumulator)"},
-    [0x12] = {"CPX", "compare with X"},
-    [0x13] = {"CPY", "compare with Y"},
-    [0x14] = {"DEC", "decrement"},
-    [0x15] = {"DEX", "decrement X"},
-    [0x16] = {"DEY", "decrement Y"},
-    [0x17] = {"EOR", "exclusive or (with accumulator)"},
-    [0x18] = {"INC", "increment"},
-    [0x19] = {"INX", "increment X"},
-    [0x1A] = {"INY", "increment Y"},
-    [0x1B] = {"JMP", "jump"},
-    [0x1C] = {"JSR", "jump subroutine"},
-    [0x1D] = {"LDA", "load accumulator"},
-    [0x1E] = {"LDX", "load X"},
-    [0x1F] = {"LDY", "load Y"},
-    [0x20] = {"LSR", "logical shift right"},
-    [0x21] = {"NOP", "no operation"},
-    [0x22] = {"ORA", "or with accumulator"},
-    [0x23] = {"PHA", "push accumulator"},
-    [0x24] = {"PHP", "push processor status (SR)"},
-    [0x25] = {"PLA", "pull accumulator"},
-    [0x26] = {"PLP", "pull processor status (SR)"},
-    [0x27] = {"ROL", "rotate left"},
-    [0x28] = {"ROR", "rotate right"},
-    [0x29] = {"RTI", "return from interrupt"},
-    [0x2A] = {"RTS", "return from subroutine"},
-    [0x2B] = {"SBC", "subtract with carry"},
-    [0x2C] = {"SEC", "set carry"},
-    [0x2D] = {"SED", "set decimal"},
-    [0x2E] = {"SEI", "set interrupt disable"},
-    [0x2F] = {"STA", "store accumulator"},
-    [0x30] = {"STX", "store X"},
-    [0x31] = {"STY", "store Y"},
-    [0x32] = {"TAX", "transfer accumulator to X"},
-    [0x33] = {"TAY", "transfer accumulator to Y"},
-    [0x34] = {"TSX", "transfer stack pointer to X"},
-    [0x35] = {"TXA", "transfer X to accumulator"},
-    [0x36] = {"TXS", "transfer X to stack pointer"},
-    [0x37] = {"TYA", "transfer Y to accumulator"},
+typedef enum {
+    ADC = 0x00, AND = 0x01, ASL = 0x02, BCC = 0x03,
+    BCS = 0x04, BEQ = 0x05, BIT = 0x06, BMI = 0x07,
+    BNE = 0x08, BPL = 0x09, BRK = 0x0A, BVC = 0x0B,
+    BVS = 0x0C, CLC = 0x0D, CLD = 0x0E, CLI = 0x0F,
+    CLV = 0x10, CMP = 0x11, CPX = 0x12, CPY = 0x13,
+    DEC = 0x14, DEX = 0x15, DEY = 0x16, EOR = 0x17,
+    INC = 0x18, INX = 0x19, INY = 0x1A, JMP = 0x1B,
+    JSR = 0x1C, LDA = 0x1D, LDX = 0x1E, LDY = 0x1F,
+    LSR = 0x20, NOP = 0x21, ORA = 0x22, PHA = 0x23,
+    PHP = 0x24, PLA = 0x25, PLP = 0x26, ROL = 0x27,
+    ROR = 0x28, RTI = 0x29, RTS = 0x2A, SBC = 0x2B,
+    SEC = 0x2C, SED = 0x2D, SEI = 0x2E, STA = 0x2F,
+    STX = 0x30, STY = 0x31, TAX = 0x32, TAY = 0x33,
+    TSX = 0x34, TXA = 0x35, TXS = 0x36, TYA = 0x37,
+    INSN_COUNT
+} insn_t;
+
+typedef enum {
+    ACC = 0x0, ABS = 0x1, ABX = 0x2, ABY = 0x3,
+    IMM = 0x4, IMP = 0x5, IND = 0x6, XIN = 0x7,
+    YIN = 0x8, REL = 0x9, ZPG = 0xA, ZPX = 0xB,
+    ZPY = 0xC, INV = 0xD,
+    AMODE_COUNT
+} amode_t;
+
+static const char *insnnames[INSN_COUNT][2] = {
+    [ADC] = {"ADC", "add with carry"},
+    [AND] = {"AND", "and (with accumulator)"},
+    [ASL] = {"ASL", "arithmetic shift left"},
+    [BCC] = {"BCC", "branch on carry clear"},
+    [BCS] = {"BCS", "branch on carry set"},
+    [BEQ] = {"BEQ", "branch on equal (zero set)"},
+    [BIT] = {"BIT", "bit test"},
+    [BMI] = {"BMI", "branch on minus (negative set)"},
+    [BNE] = {"BNE", "branch on not equal (zero clear)"},
+    [BPL] = {"BPL", "branch on plus (negative clear)"},
+    [BRK] = {"BRK", "break / interrupt"},
+    [BVC] = {"BVC", "branch on overflow clear"},
+    [BVS] = {"BVS", "branch on overflow set"},
+    [CLC] = {"CLC", "clear carry"},
+    [CLD] = {"CLD", "clear decimal"},
+    [CLI] = {"CLI", "clear interrupt disable"},
+    [CLV] = {"CLV", "clear overflow"},
+    [CMP] = {"CMP", "compare (with accumulator)"},
+    [CPX] = {"CPX", "compare with X"},
+    [CPY] = {"CPY", "compare with Y"},
+    [DEC] = {"DEC", "decrement"},
+    [DEX] = {"DEX", "decrement X"},
+    [DEY] = {"DEY", "decrement Y"},
+    [EOR] = {"EOR", "exclusive or (with accumulator)"},
+    [INC] = {"INC", "increment"},
+    [INX] = {"INX", "increment X"},
+    [INY] = {"INY", "increment Y"},
+    [JMP] = {"JMP", "jump"},
+    [JSR] = {"JSR", "jump subroutine"},
+    [LDA] = {"LDA", "load accumulator"},
+    [LDX] = {"LDX", "load X"},
+    [LDY] = {"LDY", "load Y"},
+    [LSR] = {"LSR", "logical shift right"},
+    [NOP] = {"NOP", "no operation"},
+    [ORA] = {"ORA", "or with accumulator"},
+    [PHA] = {"PHA", "push accumulator"},
+    [PHP] = {"PHP", "push processor status (SR)"},
+    [PLA] = {"PLA", "pull accumulator"},
+    [PLP] = {"PLP", "pull processor status (SR)"},
+    [ROL] = {"ROL", "rotate left"},
+    [ROR] = {"ROR", "rotate right"},
+    [RTI] = {"RTI", "return from interrupt"},
+    [RTS] = {"RTS", "return from subroutine"},
+    [SBC] = {"SBC", "subtract with carry"},
+    [SEC] = {"SEC", "set carry"},
+    [SED] = {"SED", "set decimal"},
+    [SEI] = {"SEI", "set interrupt disable"},
+    [STA] = {"STA", "store accumulator"},
+    [STX] = {"STX", "store X"},
+    [STY] = {"STY", "store Y"},
+    [TAX] = {"TAX", "transfer accumulator to X"},
+    [TAY] = {"TAY", "transfer accumulator to Y"},
+    [TSX] = {"TSX", "transfer stack pointer to X"},
+    [TXA] = {"TXA", "transfer X to accumulator"},
+    [TXS] = {"TXS", "transfer X to stack pointer"},
+    [TYA] = {"TYA", "transfer Y to accumulator"},
 };
 
 // abbreviated, un-abbreviated, syntax, byte count, description
-static const char *modeinfo[14][5] = {
-    [0x0] = {"A",     "Accumulator",         "OPC A",       "1", "operand is AC (implied single byte instruction)"},
-    [0x1] = {"abs",   "absolute",            "OPC $LLHH",   "3", "operand is address $HHLL"},
-    [0x2] = {"abs,X", "absolute, X-indexed", "OPC $LLHH,X", "3", "operand is address; effective address is address incremented by X with carry"},
-    [0x3] = {"abs,Y", "absolute, Y-indexed", "OPC $LLHH,Y", "3", "operand is address; effective address is address incremented by Y with carry"},
-    [0x4] = {"#",     "immediate",           "OPC #$BB",    "2", "operand is byte BB"},
-    [0x5] = {"impl",  "implied",             "OPC",         "1", "operand implied"},
-    [0x6] = {"ind",   "indirect",            "OPC ($LLHH)", "3", "operand is address; effective address is contents of word at address: C.w($HHLL)"},
-    [0x7] = {"X,ind", "X-indexed, indirect", "OPC ($LL,X)", "2", "operand is zeropage address; effective address is word in (LL + X, LL + X + 1), inc. without carry: C.w($00LL + X)"},
-    [0x8] = {"ind,Y", "indirect, Y-indexed", "OPC ($LL),Y", "2", "operand is zeropage address; effective address is word in (LL, LL + 1) incremented by Y with carry: C.w($00LL) + Y"},
-    [0x9] = {"rel",   "relative",            "OPC $BB",     "2", "branch target is PC + signed offset BB"},
-    [0xA] = {"zpg",   "zeropage",            "OPC $LL",     "2", "operand is zeropage address (hi-byte is zero, address = $00LL)"},
-    [0xB] = {"zpg,X", "zeropage, X-indexed", "OPC $LL,X",   "2", "operand is zeropage address; effective address is address incremented by X without carry"},
-    [0xC] = {"zpg,Y", "zeropage, Y-indexed", "OPC $LL,Y",   "2", "operand is zeropage address; effective address is address incremented by Y without carry"},
-    [0xD] = {"n/a",   "invalid",             "n/a",         "0", "invalid addressing mode"},
+static const char *modeinfo[AMODE_COUNT][5] = {
+    [ACC] = {"A",     "Accumulator",         "OPC A",       "1", "operand is AC (implied single byte instruction)"},
+    [ABS] = {"abs",   "absolute",            "OPC $LLHH",   "3", "operand is address $HHLL"},
+    [ABX] = {"abs,X", "absolute, X-indexed", "OPC $LLHH,X", "3", "operand is address; effective address is address incremented by X with carry"},
+    [ABY] = {"abs,Y", "absolute, Y-indexed", "OPC $LLHH,Y", "3", "operand is address; effective address is address incremented by Y with carry"},
+    [IMM] = {"#",     "immediate",           "OPC #$BB",    "2", "operand is byte BB"},
+    [IMP] = {"impl",  "implied",             "OPC",         "1", "operand implied"},
+    [IND] = {"ind",   "indirect",            "OPC ($LLHH)", "3", "operand is address; effective address is contents of word at address: C.w($HHLL)"},
+    [XIN] = {"X,ind", "X-indexed, indirect", "OPC ($LL,X)", "2", "operand is zeropage address; effective address is word in (LL + X, LL + X + 1), inc. without carry: C.w($00LL + X)"},
+    [YIN] = {"ind,Y", "indirect, Y-indexed", "OPC ($LL),Y", "2", "operand is zeropage address; effective address is word in (LL, LL + 1) incremented by Y with carry: C.w($00LL) + Y"},
+    [REL] = {"rel",   "relative",            "OPC $BB",     "2", "branch target is PC + signed offset BB"},
+    [ZPG] = {"zpg",   "zeropage",            "OPC $LL",     "2", "operand is zeropage address (hi-byte is zero, address = $00LL)"},
+    [ZPX] = {"zpg,X", "zeropage, X-indexed", "OPC $LL,X",   "2", "operand is zeropage address; effective address is address incremented by X without carry"},
+    [ZPY] = {"zpg,Y", "zeropage, Y-indexed", "OPC $LL,Y",   "2", "operand is zeropage address; effective address is address incremented by Y without carry"},
+    [INV] = {"n/a",   "invalid",             "n/a",         "0", "invalid addressing mode"},
+};
+
+static const u8 modelen[AMODE_COUNT] = {
+    [ACC] = 1, [ABS] = 3, [ABX] = 3, [ABY] = 3,
+    [IMM] = 2, [IMP] = 1, [IND] = 3, [XIN] = 2,
+    [YIN] = 2, [REL] = 2, [ZPG] = 2, [ZPX] = 2,
+    [ZPY] = 2, [INV] = 0,
 };
 
 static const u8 modemap[256] = {
-    0x5, 0x7, 0xD, 0xD, 0xD, 0xA, 0xA, 0xD, 0x5, 0x4, 0x0, 0xD, 0xD, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
-    0x1, 0x7, 0xD, 0xD, 0xA, 0xA, 0xA, 0xD, 0x5, 0x4, 0x0, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
-    0x5, 0x7, 0xD, 0xD, 0xD, 0xA, 0xA, 0xD, 0x5, 0x4, 0x0, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
-    0x5, 0x7, 0xD, 0xD, 0xD, 0xA, 0xA, 0xD, 0x5, 0x4, 0x0, 0xD, 0x8, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
-    0xD, 0x7, 0xD, 0xD, 0xA, 0xA, 0xA, 0xD, 0x5, 0xD, 0x5, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xB, 0xB, 0xC, 0xD, 0x5, 0x3, 0x5, 0xD, 0xD, 0x2, 0xD, 0xD,
-    0x4, 0x7, 0x4, 0xD, 0xA, 0xA, 0xA, 0xD, 0x5, 0x4, 0x5, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xB, 0xB, 0xC, 0xD, 0x5, 0x3, 0x5, 0xD, 0x2, 0x2, 0x3, 0xD,
-    0x4, 0x7, 0xD, 0xD, 0xA, 0xA, 0xA, 0xD, 0x5, 0x4, 0x5, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
-    0x4, 0x7, 0xD, 0xD, 0xA, 0xA, 0xA, 0xD, 0x5, 0x4, 0x5, 0xD, 0x1, 0x1, 0x1, 0xD,
-    0x9, 0x8, 0xD, 0xD, 0xD, 0xB, 0xB, 0xD, 0x5, 0x3, 0xD, 0xD, 0xD, 0x2, 0x2, 0xD,
+/*        -0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9,  -A,  -B,  -C,  -D,  -E,  -F,       */
+/* 0- */ IMP, XIN, INV, INV, INV, ZPG, ZPG, INV, IMP, IMM, ACC, INV, INV, ABS, ABS, INV, /* 0- */
+/* 1- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* 1- */
+/* 2- */ ABS, XIN, INV, INV, ZPG, ZPG, ZPG, INV, IMP, IMM, ACC, INV, ABS, ABS, ABS, INV, /* 2- */
+/* 3- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* 3- */
+/* 4- */ IMP, XIN, INV, INV, INV, ZPG, ZPG, INV, IMP, IMM, ACC, INV, ABS, ABS, ABS, INV, /* 4- */
+/* 5- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* 5- */
+/* 6- */ IMP, XIN, INV, INV, INV, ZPG, ZPG, INV, IMP, IMM, ACC, INV, IND, ABS, ABS, INV, /* 6- */
+/* 7- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* 7- */
+/* 8- */ INV, XIN, INV, INV, ZPG, ZPG, ZPG, INV, IMP, INV, IMP, INV, ABS, ABS, ABS, INV, /* 8- */
+/* 9- */ REL, YIN, INV, INV, ZPX, ZPX, ZPY, INV, IMP, ABY, IMP, INV, INV, ABX, INV, INV, /* 9- */
+/* A- */ IMM, XIN, IMM, INV, ZPG, ZPG, ZPG, INV, IMP, IMM, IMP, INV, ABS, ABS, ABS, INV, /* A- */
+/* B- */ REL, YIN, INV, INV, ZPX, ZPX, ZPY, INV, IMP, ABY, IMP, INV, ABX, ABX, ABY, INV, /* B- */
+/* C- */ IMM, XIN, INV, INV, ZPG, ZPG, ZPG, INV, IMP, IMM, IMP, INV, ABS, ABS, ABS, INV, /* C- */
+/* D- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* D- */
+/* E- */ IMM, XIN, INV, INV, ZPG, ZPG, ZPG, INV, IMP, IMM, IMP, INV, ABS, ABS, ABS, INV, /* E- */
+/* F- */ REL, YIN, INV, INV, INV, ZPX, ZPX, INV, IMP, ABY, INV, INV, INV, ABX, ABX, INV, /* F- */
+/*        -0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9,  -A,  -B,  -C,  -D,  -E,  -F,       */
 };
 
 static const int insnmap[256] = {
-    0x0A, 0x22, 0x21, 0x21, 0x21, 0x22, 0x01, 0x21, 0x24, 0x22, 0x01, 0x21, 0x21, 0x22, 0x01, 0x21,
-    0x09, 0x22, 0x21, 0x21, 0x21, 0x22, 0x01, 0x21, 0x0D, 0x22, 0x21, 0x21, 0x21, 0x22, 0x01, 0x21,
-    0x1C, 0x01, 0x21, 0x21, 0x06, 0x01, 0x27, 0x21, 0x26, 0x01, 0x27, 0x21, 0x06, 0x01, 0x27, 0x21,
-    0x07, 0x01, 0x21, 0x21, 0x21, 0x01, 0x27, 0x21, 0x2C, 0x01, 0x21, 0x21, 0x21, 0x01, 0x27, 0x21,
-    0x29, 0x17, 0x21, 0x21, 0x21, 0x17, 0x20, 0x21, 0x23, 0x17, 0x20, 0x21, 0x1B, 0x17, 0x20, 0x21,
-    0x0B, 0x17, 0x21, 0x21, 0x21, 0x17, 0x20, 0x21, 0x0F, 0x17, 0x21, 0x21, 0x21, 0x17, 0x20, 0x21,
-    0x2A, 0x00, 0x21, 0x21, 0x21, 0x00, 0x28, 0x21, 0x25, 0x00, 0x28, 0x21, 0x1B, 0x00, 0x28, 0x21,
-    0x0C, 0x00, 0x21, 0x21, 0x21, 0x00, 0x28, 0x21, 0x2E, 0x00, 0x21, 0x21, 0x21, 0x00, 0x28, 0x21,
-    0x21, 0x2F, 0x21, 0x21, 0x31, 0x2F, 0x31, 0x21, 0x16, 0x21, 0x35, 0x21, 0x31, 0x2F, 0x31, 0x21,
-    0x03, 0x2F, 0x21, 0x21, 0x31, 0x2F, 0x31, 0x21, 0x37, 0x2F, 0x36, 0x21, 0x21, 0x2F, 0x21, 0x21,
-    0x1F, 0x1D, 0x1E, 0x21, 0x1F, 0x1D, 0x1E, 0x21, 0x33, 0x1D, 0x32, 0x21, 0x1F, 0x1D, 0x1E, 0x21,
-    0x04, 0x1D, 0x21, 0x21, 0x1F, 0x1D, 0x1E, 0x21, 0x10, 0x1D, 0x34, 0x21, 0x1F, 0x1D, 0x1E, 0x21,
-    0x13, 0x11, 0x21, 0x21, 0x13, 0x11, 0x14, 0x21, 0x1A, 0x11, 0x15, 0x21, 0x13, 0x11, 0x14, 0x21,
-    0x08, 0x11, 0x21, 0x21, 0x21, 0x11, 0x14, 0x21, 0x0E, 0x11, 0x21, 0x21, 0x21, 0x11, 0x14, 0x21,
-    0x12, 0x2B, 0x21, 0x21, 0x12, 0x2B, 0x18, 0x21, 0x19, 0x2B, 0x21, 0x21, 0x12, 0x2B, 0x18, 0x21,
-    0x05, 0x2B, 0x21, 0x21, 0x21, 0x2B, 0x18, 0x21, 0x2D, 0x2B, 0x21, 0x21, 0x21, 0x2B, 0x18, 0x21,
+/*        -0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9,  -A,  -B,  -C,  -D,  -E,  -F,       */
+/* 0- */ BRK, ORA, NOP, NOP, NOP, ORA, ASL, NOP, PHP, ORA, ASL, NOP, NOP, ORA, AND, NOP, /* 0- */
+/* 1- */ BPL, ORA, NOP, NOP, NOP, ORA, ASL, NOP, CLC, ORA, NOP, NOP, NOP, ORA, AND, NOP, /* 1- */
+/* 2- */ JSR, AND, NOP, NOP, BIT, AND, ROL, NOP, PLP, AND, ROL, NOP, BIT, AND, ROL, NOP, /* 2- */
+/* 3- */ BMI, AND, NOP, NOP, NOP, AND, ROL, NOP, SEC, AND, NOP, NOP, NOP, AND, ROL, NOP, /* 3- */
+/* 4- */ RTI, EOR, NOP, NOP, NOP, EOR, LSR, NOP, PHA, EOR, LSR, NOP, JMP, EOR, LSR, NOP, /* 4- */
+/* 5- */ BVC, EOR, NOP, NOP, NOP, EOR, LSR, NOP, CLI, EOR, NOP, NOP, NOP, EOR, LSR, NOP, /* 5- */
+/* 6- */ RTS, ADC, NOP, NOP, NOP, ADC, ROR, NOP, PLA, ADC, ROR, NOP, JMP, ADC, ROR, NOP, /* 6- */
+/* 7- */ BVS, ADC, NOP, NOP, NOP, ADC, ROR, NOP, SEI, ADC, NOP, NOP, NOP, ADC, ROR, NOP, /* 7- */
+/* 8- */ NOP, STA, NOP, NOP, STY, STA, STY, NOP, DEY, NOP, TXA, NOP, STY, STA, STY, NOP, /* 8- */
+/* 9- */ BCC, STA, NOP, NOP, STY, STA, STY, NOP, TYA, STA, TXS, NOP, NOP, STA, NOP, NOP, /* 9- */
+/* A- */ LDY, LDA, LDX, NOP, LDY, LDA, LDX, NOP, TAY, LDA, TAX, NOP, LDY, LDA, LDX, NOP, /* A- */
+/* B- */ BCS, LDA, NOP, NOP, LDY, LDA, LDX, NOP, CLV, LDA, TSX, NOP, LDY, LDA, LDX, NOP, /* B- */
+/* C- */ CPY, CMP, NOP, NOP, CPY, CMP, DEC, NOP, INY, CMP, DEX, NOP, CPY, CMP, DEC, NOP, /* C- */
+/* D- */ BNE, CMP, NOP, NOP, NOP, CMP, DEC, NOP, CLD, CMP, NOP, NOP, NOP, CMP, DEC, NOP, /* D- */
+/* E- */ CPX, SBC, NOP, NOP, CPX, SBC, INC, NOP, INX, SBC, NOP, NOP, CPX, SBC, INC, NOP, /* E- */
+/* F- */ BEQ, SBC, NOP, NOP, NOP, SBC, INC, NOP, SED, SBC, NOP, NOP, NOP, SBC, INC, NOP, /* F- */
+/*        -0,  -1,  -2,  -3,  -4,  -5,  -6,  -7,  -8,  -9,  -A,  -B,  -C,  -D,  -E,  -F,       */
 };
 
 #endif // INSN_H
-
-
-#define INSN_IMPL
-#ifdef INSN_IMPL
-
-#include <stdio.h>
-#include <string.h>
-
-// opcode dissassembly
-static const char *opcdasm(u8 opc, u8 lo, u8 hi) {
-    static char str[64];
-    memset(str, 0, sizeof(str));
-
-    // instruction name
-    const char *name = insnnames[insnmap[opc]][0];
-
-    switch (modemap[opc]) {
-    case 0x0:
-        snprintf(str, sizeof(str), "%02X -> %s %s", opc, name, "A");
-        break;
-    case 0x1:
-        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X", opc, lo, hi, name, lo, hi);
-        break;
-    case 0x2:
-        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X,X", opc, lo, hi, name, lo, hi);
-        break;
-    case 0x3:
-        snprintf(str, sizeof(str), "%02X %02X %02X -> %s $%02X%02X,Y", opc, lo, hi, name, lo, hi);
-        break;
-    case 0x4:
-        snprintf(str, sizeof(str), "%02X %02X -> %s #$%02X", opc, lo, name, lo);
-        break;
-    case 0x5:
-        snprintf(str, sizeof(str), "%02X -> %s", opc, name);
-        break;
-    case 0x6:
-        snprintf(str, sizeof(str), "%02X %02X %02X -> %s ($%02X%02X)", opc, lo, hi, name, lo, hi);
-        break;
-    case 0x7:
-        snprintf(str, sizeof(str), "%02X %02X -> %s ($%02X,X)", opc, lo, name, lo);
-        break;
-    case 0x8:
-        snprintf(str, sizeof(str), "%02X %02X -> %s ($%02X),Y", opc, lo, name, lo);
-        break;
-    case 0x9:
-        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X", opc, lo, name, lo);
-        break;
-    case 0xA:
-        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X", opc, lo, name, lo);
-        break;
-    case 0xB:
-        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X,X", opc, lo, name, lo);
-        break;
-    case 0xC:
-        snprintf(str, sizeof(str), "%02X %02X -> %s $%02X,Y", opc, lo, name, lo);
-        break;
-    default:
-        snprintf(str, sizeof(str), "%02X -> invalid opcode", opc);
-        break;
-    }
-
-    return str;
-}
-
-#endif // INSN_IMPL
